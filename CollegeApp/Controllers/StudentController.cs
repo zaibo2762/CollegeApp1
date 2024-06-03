@@ -1,4 +1,5 @@
 ﻿using CollegeApp.Models;
+using CollegeApp.MyLogging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -9,10 +10,16 @@ namespace CollegeApp.Controllers
     [ApiController]
     public class StudentController : ControllerBase
     {
+       private readonly ILogger<StudentController> _logger;
+        public StudentController(ILogger<StudentController> logger)
+        {
+                _logger = logger;
+        }
         [HttpGet]
         [Route("All", Name = "GetAllStudent")]
         public ActionResult<IEnumerable<StudentDTO>> GetStudent()
         {
+            _logger.LogInformation("Get Student MEthod Started");
             //var students = new List<StudentDTO>();
             //foreach (var item in CollegeRepository.Students)
             //{
@@ -40,12 +47,14 @@ namespace CollegeApp.Controllers
         {
             if (string.IsNullOrEmpty(name))
             {
+                _logger.LogWarning("Bad Requst");
                 return BadRequest();
             }
             var student = CollegeRepository.Students.Where(n => n.StudentName == name).FirstOrDefault();
             if (student == null)
             {
-                return NotFound($"The Student With ID {name} not found");
+                _logger.LogError("Student Not Found with NAme");
+                return NotFound($"The Student With Name {name} not found");
             }
             return Ok(student);
         }
