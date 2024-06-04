@@ -1,5 +1,8 @@
 
+using CollegeApp.Data;
 using CollegeApp.MyLogging;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace CollegeApp
 {
@@ -8,8 +11,12 @@ namespace CollegeApp
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            
-           
+
+
+            builder.Services.AddDbContext<CollegeDBContext>(options =>
+            {
+                options.UseSqlServer(builder.Configuration.GetConnectionString("CollegeAppDbConnection"));
+            });
 
             // Add services to the container.
 
