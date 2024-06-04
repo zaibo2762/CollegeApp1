@@ -1,4 +1,5 @@
-﻿using CollegeApp.Models;
+﻿using CollegeApp.Data;
+using CollegeApp.Models;
 using CollegeApp.MyLogging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.JsonPatch;
@@ -11,15 +12,18 @@ namespace CollegeApp.Controllers
     public class StudentController : ControllerBase
     {
        private readonly ILogger<StudentController> _logger;
-        public StudentController(ILogger<StudentController> logger)
+        private readonly CollegeDBContext _dbcontext;
+        public StudentController(ILogger<StudentController> logger, CollegeDBContext dBContext)
         {
                 _logger = logger;
+            _dbcontext = dBContext;
         }
         [HttpGet]
         [Route("All", Name = "GetAllStudent")]
         public ActionResult<IEnumerable<StudentDTO>> GetStudent()
         {
             _logger.LogInformation("Get Student MEthod Started");
+            var students =_dbcontext.Students;
             //var students = new List<StudentDTO>();
             //foreach (var item in CollegeRepository.Students)
             //{
@@ -32,14 +36,15 @@ namespace CollegeApp.Controllers
             //    };
             //    students.Add(obj);
             //}
-            var students = CollegeRepository.Students.Select(s => new StudentDTO()
-            {
-                Id = s.Id,
-                StudentName = s.StudentName,
-                Address = s.Address,
-                Email = s.Email,
-            });
-            return Ok(CollegeRepository.Students);
+           // var students = _dbcontext.Students.Select(s => new StudentDTO()
+            //{
+              //  Id = s.Id,
+                //StudentName = s.StudentName,
+                //Address = s.Address,
+                //Email = s.Email,
+                //DOB = s.DOB
+            //});
+            return Ok(_dbcontext.Students);
         }
         [HttpGet]
         [Route("{name:alpha}", Name = "GetStudentByName")]
@@ -50,7 +55,7 @@ namespace CollegeApp.Controllers
                 _logger.LogWarning("Bad Requst");
                 return BadRequest();
             }
-            var student = CollegeRepository.Students.Where(n => n.StudentName == name).FirstOrDefault();
+            var student = _dbcontext.Students.Where(n => n.StudentName == name).FirstOrDefault();
             if (student == null)
             {
                 _logger.LogError("Student Not Found with NAme");
@@ -65,7 +70,7 @@ namespace CollegeApp.Controllers
             {
                 return BadRequest();
             }
-            var student = CollegeRepository.Students.Where(n => n.Id == id).FirstOrDefault();
+            var student = _dbcontext.Students.Where(n => n.Id == id).FirstOrDefault();
             if(student == null)
             {
                 return NotFound($"The Student With ID {id} not found");
@@ -85,14 +90,15 @@ namespace CollegeApp.Controllers
             {
             return BadRequest();
             }
-            int newId = CollegeRepository.Students.LastOrDefault().Id + 1;
+            
             Student student = new Student { 
             Id = model.Id,
             StudentName = model.StudentName,
             Email = model.Email,
             Address = model.Address,
             };
-            CollegeRepository.Students.Add(student);
+            _dbcontext.Students.Add(student);
+            _dbcontext.SaveChanges();
             model.Id = student.Id;
             return Ok(model);
         }
@@ -103,7 +109,7 @@ namespace CollegeApp.Controllers
             {
                 return BadRequest();
             }
-            var existingStudent = CollegeRepository.Students.Where(s=> s.Id == model.Id).FirstOrDefault();
+            var existingStudent = _dbcontext.Students.Where(s=> s.Id == model.Id).FirstOrDefault();
             if(existingStudent == null) {
                 return NotFound();
             }
@@ -112,6 +118,8 @@ namespace CollegeApp.Controllers
             existingStudent.StudentName = model.StudentName;
             existingStudent.Email = model.Email;
             existingStudent.Address = model.Address;
+            existingStudent.DOB = model.DOB;
+            _dbcontext.SaveChanges();
             return NoContent();
 
         }
@@ -123,7 +131,7 @@ namespace CollegeApp.Controllers
             {
                 return BadRequest();
             }
-            var existingStudent = CollegeRepository.Students.Where(s => s.Id == id).FirstOrDefault();
+            var existingStudent = _dbcontext.Students.Where(s => s.Id == id).FirstOrDefault();
             if (existingStudent == null)
             {
                 return NotFound();
@@ -134,6 +142,7 @@ namespace CollegeApp.Controllers
                 StudentName = existingStudent.StudentName,
                 Email = existingStudent.Email,
                 Address = existingStudent.Address,
+
             };
             patchdocument.ApplyTo(studentDTO, ModelState);
             if (!ModelState.IsValid)
@@ -146,6 +155,7 @@ namespace CollegeApp.Controllers
             existingStudent.StudentName = studentDTO.StudentName;
             existingStudent.Email = studentDTO.Email;
             existingStudent.Address = studentDTO.Address;
+            _dbcontext.SaveChanges();
             return NoContent();
 
         }
@@ -158,12 +168,13 @@ namespace CollegeApp.Controllers
             {
                 return BadRequest();
             }
-            var student = CollegeRepository.Students.Where(n => n.Id == id).FirstOrDefault();
+            var student = _dbcontext.Students.Where(n => n.Id == id).FirstOrDefault();
             if (student == null)
             {
                 return NotFound($"The Student With ID {id} not found");
             }
-            CollegeRepository.Students.Remove(student);
+            _dbcontext.Students.Remove(student);
+            _dbcontext.SaveChanges();
             return Ok(true);
         }
     }
